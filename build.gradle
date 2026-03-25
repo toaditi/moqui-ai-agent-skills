@@ -1,38 +1,42 @@
-import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 
-def moquiRoot = project.file('../../../').toPath()
 def skillsDir = project.file('.').toPath()
+def moquiRoot = project.hasProperty('moquiRoot')
+        ? Paths.get(project.getProperty('moquiRoot').toString()).toAbsolutePath().normalize()
+        : project.file('../../../').toPath().toAbsolutePath().normalize()
+def codexSkillsDir = Paths.get(System.getProperty('user.home'), '.codex', 'skills').toAbsolutePath().normalize()
 
 task syncAgentSkills {
     group = 'AI Agents'
-    description = 'Syncs skills to agent directories. Usage: ./gradlew syncAgentSkills -Pagent=claude,gemini,github,cursor,agents,all (default is agents)'
+    description = 'Syncs skills to agent directories. Usage: ./gradlew syncAgentSkills -Pagent=claude,gemini,github,cursor,codex,agents,all (default is agents)'
     doLast {
         def agentsArg = project.hasProperty('agent') ? project.getProperty('agent') : 'agents'
         def selectedAgents = agentsArg.split(',').collect { it.trim().toLowerCase() }
-        def supportedAgents = ['agents', 'gemini', 'claude', 'github', 'cursor']
-        
+        def supportedAgents = ['agents', 'gemini', 'claude', 'github', 'cursor', 'codex']
+
         def targetsToSync = selectedAgents.contains('all') ? supportedAgents : selectedAgents
-        
+
         targetsToSync.each { agent ->
             if (!supportedAgents.contains(agent)) {
                 println "⚠️ Unknown agent: ${agent}. Supported options are: ${supportedAgents.join(', ')}, all"
                 return
             }
-            
-            def targetDirPath = ".${agent}/skills"
-            def targetDir = moquiRoot.resolve(targetDirPath)
+
+            def targetDirPath = agent == 'codex' ? codexSkillsDir.toString() : ".${agent}/skills"
+            def targetDir = agent == 'codex' ? codexSkillsDir : moquiRoot.resolve(targetDirPath)
             targetDir.toFile().mkdirs()
-            
+
             copy {
                 from skillsDir.toFile()
                 into targetDir.toFile()
+                exclude ".git"
+                exclude ".gitignore"
                 exclude "build"
                 exclude ".gradle"
                 exclude "build.gradle"
                 exclude "component.xml"
                 exclude "README.md"
+                exclude "scripts"
             }
             println "✅ Copied skills to ${targetDirPath}"
         }

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Failure Learning"
+  short_description: "Update skills from failed verification"
+  brand_color: "#F97316"
+  default_prompt: "Use $improve-skills-from-failures to update skills after a failed test or verification run."
